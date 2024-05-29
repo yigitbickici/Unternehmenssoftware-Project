@@ -1,1 +1,1 @@
-#  YİĞİT BIÇKICI - EMİRCAN ÇAPKAN - 
+#  YİĞİT BIÇKICI - EMİRCAN ÇAPKAN -
