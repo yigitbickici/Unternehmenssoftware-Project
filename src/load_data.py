@@ -1,4 +1,6 @@
 import pandas as pd
 
-csv_file_path = '/data/databaseCSV - Sayfa1.csv'
-df = pd.read_csv(csv_file_path)
+
+def load_csv(file_path):
+    df = pd.read_csv(file_path)
+    return df

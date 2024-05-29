@@ -1,1 +1,0 @@
-#  YİĞİT BIÇKICI - EMİRCAN ÇAPKAN -
