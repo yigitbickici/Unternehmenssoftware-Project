@@ -13,10 +13,10 @@ def main():
     print("Data uploaded successfully.")
     
     results = collection.get(ids=['0', '1', '2'])  
-    print("Sorgulanan Veriler:", results)
+    print("Questioned data:", results)
 
     total_documents = collection.count()
-    print(f"Toplam Yüklenen Veri Sayısı: {total_documents}")
+    print(f"All data: {total_documents}")
 
 
 if __name__ == "__main__":
