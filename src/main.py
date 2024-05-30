@@ -1,19 +1,23 @@
 import sys
 sys.path.append('src')
 
-from load_data import load_csv
-from create_chromadb import create_chromadb_collection, add_data_to_collection
+import load_to_chromadb
+
 
 def main():
-    csv_file_path = 'data/databaseCSV - Sayfa1.csv'
+    file_path = '/Users/yigitbickici/Documents/GitHub/Unternehmenssoftware-Project/data/databaseCSV - Sayfa1.csv'
+    data = load_to_chromadb.load_csv(file_path)
+    vectors = load_to_chromadb.vectorize_text(data)
+    collection = load_to_chromadb.initialize_chromadb()
+    load_to_chromadb.load_data_to_chromadb(data, vectors, collection)
+    print("Data uploaded successfully.")
     
-    df = load_csv(csv_file_path)
-    
-    collection = create_chromadb_collection(name="my_collection")
-    
-    add_data_to_collection(collection, df)
-    
-    print("CSV file uploaded.")
+    results = collection.get(ids=['0', '1', '2'])  
+    print("Sorgulanan Veriler:", results)
+
+    total_documents = collection.count()
+    print(f"Toplam Yüklenen Veri Sayısı: {total_documents}")
+
 
 if __name__ == "__main__":
     main()
