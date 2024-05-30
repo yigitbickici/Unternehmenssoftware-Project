@@ -5,7 +5,7 @@ import load_to_chromadb
 
 
 def main():
-    file_path = '/Users/yigitbickici/Documents/GitHub/Unternehmenssoftware-Project/data/databaseCSV - Sayfa1.csv'
+    file_path = 'data/databaseCSV.csv'
     data = load_to_chromadb.load_csv(file_path)
     vectors = load_to_chromadb.vectorize_text(data)
     collection = load_to_chromadb.initialize_chromadb()
