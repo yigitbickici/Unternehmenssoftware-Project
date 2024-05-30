@@ -40,4 +40,8 @@ def load_data_to_chromadb(data, vectors, collection):
         metadata = row.to_dict()
         metadatas.append(metadata)
 
-    collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+    collection.add(
+        ids=ids, 
+        embeddings=embeddings, 
+        metadatas=metadatas
+    )
