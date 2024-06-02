@@ -1,11 +1,9 @@
 import chainlit as cl
 import requests
 
-
 @cl.on_chat_start
 def on_chat_start():
     cl.user_session.set("hist", "")
-
 
 @cl.on_message
 async def on_message(message: cl.Message):
@@ -20,12 +18,11 @@ async def on_message(message: cl.Message):
     x = requests.post(url, json=params)
 
     response_json = x.json()
-    result = response_json["response"]["result"]  # Sadece cevabı al
+    response_text = response_json["response"]  # Sadece cevabı al
 
-    cl.user_session.set("hist", hist + ' ' + result)  # Sadece cevabı kaydet
+    cl.user_session.set("hist", hist + ' ' + response_text)  # Sadece cevabı kaydet
 
-    await cl.Message(content=result).send()  # Sadece cevabı gönder
-
+    await cl.Message(content=response_text).send()  # Sadece cevabı gönder
 
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
