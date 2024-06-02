@@ -19,9 +19,12 @@ async def on_message(message: cl.Message):
 
     x = requests.post(url, json=params)
 
-    cl.user_session.set("hist", hist + ' ' + x.text)
+    response_json = x.json()
+    result = response_json["response"]["result"]  # Sadece cevabı al
 
-    await cl.Message(content=x.text).send()
+    cl.user_session.set("hist", hist + ' ' + result)  # Sadece cevabı kaydet
+
+    await cl.Message(content=result).send()  # Sadece cevabı gönder
 
 
 if __name__ == "__main__":

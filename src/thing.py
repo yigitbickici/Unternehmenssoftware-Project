@@ -18,7 +18,7 @@ class Message(BaseModel):
 @app.post("/generate-response")
 async def generate_response(message: Message):
     # Load the documents
-    loader = CSVLoader(file_path='/Users/yigitbickici/Documents/GitHub/Unternehmenssoftware-Project/data/database.csvs')
+    loader = CSVLoader(file_path='/Users/yigitbickici/Documents/GitHub/Unternehmenssoftware-Project/data/database.csv')
 
     # Create an embedding model
     embedding_model = OpenAIEmbeddings()
@@ -32,7 +32,8 @@ async def generate_response(message: Message):
 
     # Pass user's message as a query to the chain
     response = chain({"question": message.message})
-    
+
+
     # Return the response
     return {"response": response}
 
