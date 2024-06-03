@@ -23,7 +23,7 @@ def get_github_username_from_csv(name):
         reader = csv.DictReader(file, delimiter=';')
         for row in reader:
             if row['Name'].lower() == name.lower():
-                return row['Github'].split("/")[-1]  # Son kısmı kullanıcı adı olarak al
+                return row['Github'].split("/")[-1]
     return None
 
 @app.post("/generate-response")
@@ -34,14 +34,14 @@ async def generate_response(message: Message):
         repo_contents = git_agent.get_repo_contents(message.message)
         response = "\n".join(repo_contents)
     elif "repos" in message.message.lower():
-        name = message.message.strip().split()[-1]  # İsim bilgisini al
+        name = message.message.strip().split()[-1]
         github_username = get_github_username_from_csv(name)
         if github_username:
             git_agent = GitHubAgent(os.environ["GITHUB_TOKEN"])
             repos = git_agent.get_user_repos(github_username)
             response = "\n".join(repos)
         else:
-            response = "Kullanıcının GitHub adı bulunamadı."
+            response = "User could not found."
     else:
         # Load the documents
         loader = CSVLoader(file_path='/Users/yigitbickici/Documents/GitHub/Unternehmenssoftware-Project/data/database.csv')

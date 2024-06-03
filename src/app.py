@@ -18,11 +18,11 @@ async def on_message(message: cl.Message):
     x = requests.post(url, json=params)
 
     response_json = x.json()
-    response_text = response_json["response"]  # Sadece cevabı al
+    response_text = response_json["response"]
 
-    cl.user_session.set("hist", hist + ' ' + response_text)  # Sadece cevabı kaydet
+    cl.user_session.set("hist", hist + ' ' + response_text)
 
-    await cl.Message(content=response_text).send()  # Sadece cevabı gönder
+    await cl.Message(content=response_text).send()
 
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
