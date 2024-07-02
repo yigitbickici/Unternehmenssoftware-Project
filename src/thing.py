@@ -9,6 +9,8 @@ from langchain_community.embeddings import OpenAIEmbeddings
 import os
 from agents import GitHubAgent
 import csv
+from agents import LinkedInAgent
+
 
 os.environ["OPENAI_API_KEY"] = "sk-proj-sip24CKwpzxxhR2rKsmgT3BlbkFJVnWUMHc6WOGZdJ4uK8iF"
 os.environ["GITHUB_TOKEN"] = "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"
