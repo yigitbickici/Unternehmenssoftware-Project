@@ -42,13 +42,12 @@ class GitHubAgent:
             else:
                 all_files.append(content_file.path)
         return all_files
-
-
+"""
 class LinkedInAgent:
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.token_url = 'https://www.linkedin.com/oauth/v2/accessToken'
+        self.token_url = 'AQU7EdU3j8L_1b8qDOcEXFE20lJnBDYqOiVdbXiMiCyww05YJ80HgPeT0qNq2u_uPARgaLStgSytH0_u4KefBCUDBhzJvJQRltQYmQ4Frvp7JiTeODJDnbyp0CoOcfb9n4Kb-jdwPnHI5MLI7U__HICBC3WQW3f1RSklRkCugKda91kEzNCKHDJjXu3yh6Ifp0JkBwK83Ql-5QERRnkwQVVetrweDqoH2ZQDZUS1_IW0DBtvlhhDf1-luaYotaaxongXK730gBN_6W3-qd0EGw8Va6S924KAbZK4A-Ls9tbAyOhupjeM0-wsyyziBy0wtNaVMdiVbR3xsiShiN7N5ORD1c7LJA'
         self.profile_url = 'https://api.linkedin.com/v2/me'
         self.token = None
         self._authenticate()
@@ -73,7 +72,7 @@ class LinkedInAgent:
 
 
 
-client_id = '77bcz9g601kdmk' #linkedin DEYapp company application
+client_id = '77bcz9g601kdmk'    #linkedin DEYapp company application
 client_secret = 'ORhcGqz8Ajd9tEwM'
 
 agent = LinkedInAgent(client_id, client_secret)
@@ -84,6 +83,4 @@ try:
     print(profile_data)
 except Exception as e:
     print(f"Hata oluştu: {e}")
-
-
-
+"""
