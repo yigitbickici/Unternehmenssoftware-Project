@@ -1,4 +1,5 @@
-"""import streamlit as st
+"""
+import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -65,7 +66,7 @@ def main():
 
     with st.sidebar:
         st.subheader("Your CVs")
-        pdf_docs = st.file_uploader("Upload your CV here and click on 'Run the CV(s)'", accept_multiple_files=True)
+        pdf_docs = st.file_uploader("Upload your CV here and click on 'Run the CV(s)'",accept_multiple_files=True)
         if st.button("Run the CV(s)"):
             with st.spinner("In progress"):
                 # get pdf text
@@ -121,46 +122,55 @@ def main():
         "please indicate that the information is not available."
     )
 
-    # upload a PDF file
-    pdf = st.file_uploader("Upload your PDF", type='pdf')
+    # Upload PDF files
+    pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
 
-    if pdf is not None:
-        pdf_reader = PdfReader(pdf)
-        
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+    if pdf_files:
+        vector_stores = {}
 
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len
-        )
-        chunks = text_splitter.split_text(text=text)
+        for pdf_file in pdf_files:
+            pdf_reader = PdfReader(pdf_file)
 
-        store_name = pdf.name[:-4]
-        st.write(f'{store_name}')
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
 
-        if os.path.exists(f"{store_name}.pkl"):
-            with open(f"{store_name}.pkl", "rb") as f:
-                VectorStore = pickle.load(f)
-        else:
-            embeddings = OpenAIEmbeddings()
-            VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
-            with open(f"{store_name}.pkl", "wb") as f:
-                pickle.dump(VectorStore, f)
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+                length_function=len
+            )
+            chunks = text_splitter.split_text(text=text)
+            
+            store_name = pdf_file.name[:-4]
+            st.write(f'{store_name}')
+
+            if f"{store_name}.pkl" in vector_stores:
+                VectorStore = vector_stores[f"{store_name}.pkl"]
+            else:
+                embeddings = OpenAIEmbeddings()
+                VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
+                vector_stores[f"{store_name}.pkl"] = VectorStore
+                with open(f"{store_name}.pkl", "wb") as f:
+                    pickle.dump(VectorStore, f)
 
         query = st.text_input("Ask questions about your PDF file:")
 
         if query:
-            docs = VectorStore.similarity_search(query=query, k=3)
+            responses = []
+            for store_name, VectorStore in vector_stores.items():
+                docs = VectorStore.similarity_search(query=query, k=5)
 
-            llm = OpenAI()
-            chain = load_qa_chain(llm=llm, chain_type="stuff")
-            with get_openai_callback() as cb:
-                response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
-                print(cb)
-            st.write(response)
+                llm = OpenAI()
+                chain = load_qa_chain(llm=llm, chain_type="stuff")
+                with get_openai_callback() as cb:
+                    response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
+                    responses.append(response)
+                    print(cb)
+            
+            for response in responses:
+                st.write(response)
 
 if __name__ == '__main__':
     main()
+
