@@ -12,7 +12,6 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
 
-
 class GitHubAgent:
     def __init__(self, token):
         self.g = Github(token)
@@ -40,7 +39,6 @@ class GitHubAgent:
                 all_files.append(content_file.path)
         return all_files
 
-
 # Sidebar contents
 with st.sidebar:
     st.title('🤗💬 LLM Chat App')
@@ -54,7 +52,6 @@ with st.sidebar:
 
 load_dotenv()
 
-
 def extract_github_username(text):
     # Basic regex to extract GitHub usernames or URLs
     github_url_pattern = r"https://github\.com/([a-zA-Z0-9-]+)"
@@ -64,7 +61,6 @@ def extract_github_username(text):
     usernames = re.findall(github_username_pattern, text)
 
     return urls + usernames
-
 
 def main():
     st.header("Chat with PDF 💬")
@@ -119,23 +115,26 @@ def main():
         with open("combined_texts.pkl", "wb") as f:
             pickle.dump(chunks, f)
 
-        query = st.text_input("Ask questions about your PDF files:")
+        # Özellik seçimi için multiselect widget
+        options = ["Education", "Skills", "Projects", "Experiences"]
+        selected_options = st.multiselect("Select the features you want to compare:", options)
 
-        if query:
-            docs = VectorStore.similarity_search(query=query, k=5)
+        if st.button("Process"):
+            if selected_options:
+                query = "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(selected_options) + "."
+                docs = VectorStore.similarity_search(query=query, k=5)
 
-            llm = OpenAI()
-            chain = load_qa_chain(llm=llm, chain_type="stuff")
-            with get_openai_callback() as cb:
-                response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
-                st.write(response)
-                print(cb)
+                llm = OpenAI()
+                chain = load_qa_chain(llm=llm, chain_type="stuff")
+                with get_openai_callback() as cb:
+                    response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
+                    st.write(response)
+                    print(cb)
 
-            if "github" in query.lower():
-                for username in github_usernames:
-                    repos = github_agent.get_user_repos(username)
-                    st.write(f"GitHub Repositories for {username}: {repos}")
-
+                if "github" in query.lower():
+                    for username in github_usernames:
+                        repos = github_agent.get_user_repos(username)
+                        st.write(f"GitHub Repositories for {username}: {repos}")
 
 if __name__ == '__main__':
     main()
