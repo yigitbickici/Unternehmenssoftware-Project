@@ -71,10 +71,10 @@ def main():
 
     # Sistem promptu
     system_prompt = (
-        "You are a head hunter assistant who can answer questions based on the content of a CV file."
-        "You need to analyze informations from CV file and can make comments about the owner of the CV"
-        "Your task is giving information about the the owners of the CV files I will provide you, and help me to whether I hire the person or not."
-        "You should provide clear and concise answers because people who are hiring will ask you questions"
+        "You are a headhunter assistant who can answer questions based on the content of CV files. "
+        "You need to analyze information from the CV files and make comments about the owners of the CVs. "
+        "Your task is to provide information about the owners of the CV files I provide you, and help me decide whether to hire the person or not. "
+        "You should provide clear and concise answers because people who are hiring will ask you questions."
     )
 
     # GitHub Token from environment variables
@@ -85,7 +85,8 @@ def main():
     pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
 
     if pdf_files:
-        vector_stores = {}
+        combined_text = ""
+        github_usernames = set()
 
         for pdf_file in pdf_files:
             pdf_reader = PdfReader(pdf_file)
@@ -94,46 +95,41 @@ def main():
             for page in pdf_reader.pages:
                 text += page.extract_text()
 
-            github_usernames = extract_github_username(text)
-            if github_usernames:
-                st.write(f"Found GitHub profiles: {github_usernames}")
+            usernames = extract_github_username(text)
+            github_usernames.update(usernames)
 
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=200,
-                length_function=len
-            )
-            chunks = text_splitter.split_text(text=text)
+            combined_text += text + "\n\n"
 
-            store_name = pdf_file.name[:-4]
-            st.write(f'{store_name}')
+        if github_usernames:
+            st.write(f"Found GitHub profiles: {list(github_usernames)}")
 
-            embeddings = OpenAIEmbeddings()
-            VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
-            vector_stores[store_name] = VectorStore
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len
+        )
+        chunks = text_splitter.split_text(text=combined_text)
 
-            # Save the FAISS index
-            with open(f"{store_name}_index.pkl", "wb") as f:
-                pickle.dump(VectorStore.index, f)
-            with open(f"{store_name}_texts.pkl", "wb") as f:
-                pickle.dump(chunks, f)
+        embeddings = OpenAIEmbeddings()
+        VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
 
-        query = st.text_input("Ask questions about your PDF file:")
+        # Save the FAISS index
+        with open("combined_index.pkl", "wb") as f:
+            pickle.dump(VectorStore.index, f)
+        with open("combined_texts.pkl", "wb") as f:
+            pickle.dump(chunks, f)
+
+        query = st.text_input("Ask questions about your PDF files:")
 
         if query:
-            responses = []
-            for store_name, VectorStore in vector_stores.items():
-                docs = VectorStore.similarity_search(query=query, k=5)
+            docs = VectorStore.similarity_search(query=query, k=5)
 
-                llm = OpenAI()
-                chain = load_qa_chain(llm=llm, chain_type="stuff")
-                with get_openai_callback() as cb:
-                    response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
-                    responses.append(response)
-                    print(cb)
-
-            for response in responses:
+            llm = OpenAI()
+            chain = load_qa_chain(llm=llm, chain_type="stuff")
+            with get_openai_callback() as cb:
+                response = chain.run(input_documents=docs, question=query, system_prompt=system_prompt)
                 st.write(response)
+                print(cb)
 
             if "github" in query.lower():
                 for username in github_usernames:
