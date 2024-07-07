@@ -64,8 +64,8 @@ def extract_emails(text):
     return emails
 
 def mail_send(receiver_email, subject, message):
-    sender_email = "emircancapkan@gmail.com"
-    password = "ozbymuzyuexjonyl"
+    sender_email = "deyapp.serefini@gmail.com"
+    password = "idjkrnlpsgvifppz"
 
     msg = MIMEMultipart()
     msg['From'] = sender_email
