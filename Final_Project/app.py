@@ -123,6 +123,9 @@ def main():
 
         custom_prompt = st.text_area("Enter your custom prompt (optional):")
 
+        # Bağlamı saklamak için bir veri yapısı (list) oluştur
+        context = []
+
         if st.button("Process"):
             if not selected_options and not custom_prompt:
                 st.write("Please select features or enter a custom prompt.")
@@ -139,11 +142,15 @@ def main():
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
 
-                final_prompt = custom_prompt if custom_prompt else default_system_prompt
+                # Bağlamı ekle
+                final_prompt = (custom_prompt if custom_prompt else default_system_prompt) + "\n\n" + "\n\n".join(context)
 
                 with get_openai_callback() as cb:
                     response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
                     st.write(response)
+
+                # Bağlama yeni soruyu ve cevabı ekle
+                context.append(f"Question: {query}\nAnswer: {response}")
 
                 if "github" in query.lower():
                     for username in github_usernames:
