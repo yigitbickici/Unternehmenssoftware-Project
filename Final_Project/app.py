@@ -93,6 +93,7 @@ def main_interface():
         "You need to analyze information from the CV files and make comments about the owners of the CVs. "
         "Your task is to provide information about the owners of the CV files I provide you, and help me decide whether to hire the person or not. "
         "You should provide clear and concise answers because people who are hiring will ask you questions."
+        "If there are more than one candidates, you have to answer by comparing them."
     )
 
     github_token = os.getenv('GITHUB_TOKEN')
@@ -169,7 +170,7 @@ def main_interface():
 
                 with get_openai_callback() as cb:
                     response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
-                    st.write('<div class="bot_template">', unsafe_allow_html=True)
+                    st.write(response,'<div class="bot_template">', unsafe_allow_html=True)
 
                 context.append(f"Question: {query}\nAnswer: {response}")
 
