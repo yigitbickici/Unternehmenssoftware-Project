@@ -69,7 +69,6 @@ def extract_github_username(text):
 def main():
     st.header("Chat with PDF 💬")
 
-    # Varsayılan sistem promptu
     default_system_prompt = (
         "You are a headhunter assistant who can answer questions based on the content of CV files. "
         "You need to analyze information from the CV files and make comments about the owners of the CVs. "
@@ -119,11 +118,9 @@ def main():
         with open("combined_texts.pkl", "wb") as f:
             pickle.dump(chunks, f)
 
-        # Özellik seçimi için multiselect widget
         options = ["Education", "Skills", "Projects", "Experiences"]
         selected_options = st.multiselect("Select the features you want to compare:", options)
 
-        # Prompt için metin girişi
         custom_prompt = st.text_area("Enter your custom prompt (optional):")
 
         if st.button("Process"):
