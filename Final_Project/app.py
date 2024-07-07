@@ -14,9 +14,6 @@ from langchain.vectorstores import FAISS
 from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
-from template import css, bot_template
-
-st.write(css, unsafe_allow_html=True)
 
 class GitHubAgent:
     def __init__(self, token):
@@ -46,7 +43,6 @@ class GitHubAgent:
         return all_files
 
 # Load environment variables
-
 load_dotenv()
 
 def extract_github_username(text):
@@ -85,21 +81,7 @@ def mail_send(receiver_email, subject, message):
     finally:
         server.quit()
 
-def main_interface():
-    st.header("Chat with PDF 💬")
-
-    default_system_prompt = (
-        "You are a headhunter assistant in DEYapp Software Company who can answer questions based on the content of CV files."
-        "You need to analyze information from the CV files and make comments about the owners of the CVs. "
-        "Your task is to provide information about the owners of the CV files I provide you, and help me decide whether to hire the person or not. "
-        "You should provide clear and concise answers because people who are hiring will ask you questions."
-        "If there are more than one candidates, you have to answer by comparing them."
-    )
-
-    github_token = os.getenv('GITHUB_TOKEN')
-    github_agent = GitHubAgent(github_token)
-
-    pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
+def pdf_extractor(pdf_files):
 
     if pdf_files:
         combined_text = ""
@@ -137,80 +119,115 @@ def main_interface():
         embeddings = OpenAIEmbeddings()
         VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
 
+        st.session_state.VectorStore = VectorStore
+        st.session_state.emails = emails
+
         with open("combined_index.pkl", "wb") as f:
             pickle.dump(VectorStore.index, f)
         with open("combined_texts.pkl", "wb") as f:
             pickle.dump(chunks, f)
 
-        options = ["Education", "Skills", "Projects", "Experiences"]
-        st.text("QUICK ACCESS")
-        selected_options = st.multiselect("Select the features you want to compare:", options)
+def comparing_and_analyzing_cvs(default_system_prompt,github_agent):
+    st.header("Comparing and Analyzing CV(s)")
 
-        custom_prompt = st.text_area("Enter your custom prompt (optional):")
+    options = ["Education", "Skills", "Projects", "Experiences"]
+    st.text("QUICK ACCESS")
+    selected_options = st.multiselect("Select the features you want to compare:", options)
 
-        context = []
+    custom_prompt = st.text_area("Enter your custom prompt (optional):")
 
-        if st.button("Process"):
-            if not selected_options and not custom_prompt:
-                st.write("Please select features or enter a custom prompt.")
-            else:
-                query = ""
-                if selected_options:
-                    query += "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(
-                        selected_options) + "."
-                if custom_prompt:
-                    query += " " + custom_prompt
+    context = []
 
-                docs = VectorStore.similarity_search(query=query, k=10)
+    if st.button("Process"):
+        if not selected_options and not custom_prompt:
+            st.write("Please select features or enter a custom prompt.")
+        else:
+            query = ""
+            if selected_options:
+                query += "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(
+                    selected_options) + "."
+            if custom_prompt:
+                query += " " + custom_prompt
+
+            docs = st.session_state.VectorStore.similarity_search(query=query, k=10)
+
+            llm = OpenAI()
+            chain = load_qa_chain(llm=llm, chain_type="stuff")
+
+            final_prompt = (custom_prompt if custom_prompt else default_system_prompt) + "\n\n" + "\n\n".join(context)
+
+            with get_openai_callback() as cb:
+                response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
+                st.write('<div class="bot_template">', unsafe_allow_html=True)
+
+            context.append(f"Question: {query}\nAnswer: {response}")
+
+            if "github" in query.lower():
+                for username in st.session_state.github_usernames:
+                    repos = github_agent.get_user_repos(username)
+                    st.write(f"GitHub Repositories for {username}: {repos}")
+
+def send_email_to_candidates():
+    st.header("Send E-mail to Candidates")
+
+    if 'VectorStore' not in st.session_state or 'emails' not in st.session_state:
+        st.error("No data available. Please upload and process CVs first.")
+        return
+
+    emails = st.session_state.emails
+    VectorStore = st.session_state.VectorStore
+
+    if emails:
+        receiver_email = st.selectbox("Select email to send:", list(emails))
+        subject = st.text_input("Subject")
+        email_prompt = st.text_area("What would you like to include in the email? Describe the content.")
+
+        if st.button("Send Email"):
+            if receiver_email and subject and email_prompt:
+                email_query = f"Write an email with the following content: {email_prompt}"
+                docs = VectorStore.similarity_search(query=email_query, k=5)
 
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
 
-                final_prompt = (custom_prompt if custom_prompt else default_system_prompt) + "\n\n" + "\n\n".join(context)
-
                 with get_openai_callback() as cb:
-                    response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
-                    st.write(response,'<div class="bot_template">', unsafe_allow_html=True)
+                    email_message = chain.run(input_documents=docs, question=email_query, system_prompt=default_system_prompt)
 
-                context.append(f"Question: {query}\nAnswer: {response}")
-
-                if "github" in query.lower():
-                    for username in github_usernames:
-                        repos = github_agent.get_user_repos(username)
-                        st.write(f"GitHub Repositories for {username}: {repos}")
-
-        st.subheader("Send Email")
-        if emails:
-            receiver_email = st.selectbox("Select email to send:", list(emails))
-            subject = st.text_input("Subject")
-            email_prompt = st.text_area("What would you like to include in the email? Describe the content.")
-
-            if st.button("Send Email"):
-                if receiver_email and subject and email_prompt:
-                    email_query = f"Write an email with the following content: {email_prompt}"
-                    docs = VectorStore.similarity_search(query=email_query, k=5)
-
-                    llm = OpenAI()
-                    chain = load_qa_chain(llm=llm, chain_type="stuff")
-
-                    with get_openai_callback() as cb:
-                        email_message = chain.run(input_documents=docs, question=email_query, system_prompt=default_system_prompt)
-                    
-                    mail_send(receiver_email, subject, email_message)
-                else:
-                    st.error("Please fill in all fields to send an email.")
+                mail_send(receiver_email, subject, email_message)
+            else:
+                st.error("Please fill in all fields to send an email.")
 
 def main():
-    if 'page' not in st.session_state:
-        st.session_state.page = 'home'
+    default_system_prompt = (
+        "You are a headhunter assistant in DEYapp Software Company who can answer questions based on the content of CV files."
+        "You need to analyze information from the CV files and make comments about the owners of the CVs. "
+        "Your task is to provide information about the owners of the CV files I provide you, and help me decide whether to hire the person or not. "
+        "You should provide clear and concise answers because people who are hiring will ask you questions."
+    )
 
-    if st.session_state.page == 'home':
-        st.title("WELCOME TO HEAD HUNTER CV CHATBOT")
-        if st.button("ENTER"):
-            st.session_state.page = 'chatbot'
-            st.experimental_rerun()
-    elif st.session_state.page == 'chatbot':
-        main_interface()
+    github_token = os.getenv('GITHUB_TOKEN')
+    github_agent = GitHubAgent(github_token)
+
+    st.title("WELCOME TO HEAD HUNTER CV CHATBOT")
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+    pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
+    pdf_extractor(pdf_files)
+
+    if st.button("Comparing and Analyzing CV(s)"):
+        st.session_state.page = 'compare_analyze'
+        st.experimental_rerun()
+
+    if st.button("Send E-mail to candidates"):
+        st.session_state.page = 'send_email'
+        st.experimental_rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if 'page' in st.session_state:
+        if st.session_state.page == 'compare_analyze':
+            comparing_and_analyzing_cvs(default_system_prompt,github_agent)
+        elif st.session_state.page == 'send_email':
+            send_email_to_candidates()
 
 if __name__ == '__main__':
     main()
