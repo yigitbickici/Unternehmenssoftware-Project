@@ -126,7 +126,7 @@ def main():
                 if custom_prompt:
                     query += " " + custom_prompt
 
-                docs = VectorStore.similarity_search(query=query, k=5)
+                docs = VectorStore.similarity_search(query=query, k=10)
 
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
