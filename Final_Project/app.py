@@ -82,7 +82,6 @@ def mail_send(receiver_email, subject, message):
         server.quit()
 
 def pdf_extractor(pdf_files):
-
     if pdf_files:
         combined_text = ""
         github_usernames = set()
@@ -119,7 +118,9 @@ def pdf_extractor(pdf_files):
         embeddings = OpenAIEmbeddings()
         VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
 
+        # Initialize session state variables
         st.session_state.VectorStore = VectorStore
+        st.session_state.github_usernames = github_usernames
         st.session_state.emails = emails
 
         with open("combined_index.pkl", "wb") as f:
@@ -127,7 +128,7 @@ def pdf_extractor(pdf_files):
         with open("combined_texts.pkl", "wb") as f:
             pickle.dump(chunks, f)
 
-def comparing_and_analyzing_cvs(default_system_prompt,github_agent):
+def comparing_and_analyzing_cvs(default_system_prompt, github_agent):
     st.header("Comparing and Analyzing CV(s)")
 
     options = ["Education", "Skills", "Projects", "Experiences"]
@@ -144,8 +145,7 @@ def comparing_and_analyzing_cvs(default_system_prompt,github_agent):
         else:
             query = ""
             if selected_options:
-                query += "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(
-                    selected_options) + "."
+                query += "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(selected_options) + "."
             if custom_prompt:
                 query += " " + custom_prompt
 
@@ -158,7 +158,7 @@ def comparing_and_analyzing_cvs(default_system_prompt,github_agent):
 
             with get_openai_callback() as cb:
                 response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
-                st.write('<div class="bot_template">', unsafe_allow_html=True)
+                st.write(response, '<div class="bot_template">', unsafe_allow_html=True)
 
             context.append(f"Question: {query}\nAnswer: {response}")
 
@@ -225,7 +225,7 @@ def main():
 
     if 'page' in st.session_state:
         if st.session_state.page == 'compare_analyze':
-            comparing_and_analyzing_cvs(default_system_prompt,github_agent)
+            comparing_and_analyzing_cvs(default_system_prompt, github_agent)
         elif st.session_state.page == 'send_email':
             send_email_to_candidates()
 
