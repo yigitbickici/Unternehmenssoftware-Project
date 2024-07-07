@@ -34,12 +34,3 @@ bot_template = """
     <div class="message">{{MSG}}</div>
 </div>
 """
-
-user_template = """
-<div class="chat-message user">
-    <div class="avatar">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/User_icon_2.svg/1200px-User_icon_2.svg.png">
-    </div>    
-    <div class="message">{{MSG}}</div>
-</div>
-"""

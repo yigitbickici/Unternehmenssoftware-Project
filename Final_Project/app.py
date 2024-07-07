@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 import os
 import pickle
 import re
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from github import Github
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,7 +14,9 @@ from langchain.vectorstores import FAISS
 from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
+from template import css, bot_template
 
+st.write(css, unsafe_allow_html=True)
 
 class GitHubAgent:
     def __init__(self, token):
@@ -40,23 +45,10 @@ class GitHubAgent:
                 all_files.append(content_file.path)
         return all_files
 
-
-# Sidebar contents
-with st.sidebar:
-    st.title('🤗💬 LLM Chat App')
-    st.markdown('''
-    ## About
-    This app is an LLM-powered chatbot built using:
-    - [Streamlit](https://streamlit.io/)
-    - [LangChain](https://python.langchain.com/)
-    - [OpenAI](https://platform.openai.com/docs/models) LLM model
-    ''')
-
+# Load environment variables
 load_dotenv()
 
-
 def extract_github_username(text):
-    # Basic regex to extract GitHub usernames or URLs
     github_url_pattern = r"https://github\.com/([a-zA-Z0-9-]+)"
     github_username_pattern = r"\bgithub\.com/([a-zA-Z0-9-]+)\b"
 
@@ -65,27 +57,52 @@ def extract_github_username(text):
 
     return urls + usernames
 
+def extract_emails(text):
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    emails = re.findall(email_pattern, text)
+    return emails
 
-def main():
+def mail_send(receiver_email, subject, message):
+    sender_email = "emircancapkan@gmail.com"
+    password = "ozbymuzyuexjonyl"
+
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(message, 'plain', 'utf-8'))
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        st.success("E-mail sent successfully.")
+    except Exception as e:
+        st.error(f"E-mail isn't sent. Error: {e}")
+    finally:
+        server.quit()
+
+def main_interface():
     st.header("Chat with PDF 💬")
 
     default_system_prompt = (
-        "You are a headhunter assistant who can answer questions based on the content of CV files. "
+        "You are a headhunter assistant in DEYapp Software Company who can answer questions based on the content of CV files."
         "You need to analyze information from the CV files and make comments about the owners of the CVs. "
         "Your task is to provide information about the owners of the CV files I provide you, and help me decide whether to hire the person or not. "
         "You should provide clear and concise answers because people who are hiring will ask you questions."
     )
 
-    # GitHub Token from environment variables
     github_token = os.getenv('GITHUB_TOKEN')
     github_agent = GitHubAgent(github_token)
 
-    # Upload PDF files
     pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
 
     if pdf_files:
         combined_text = ""
         github_usernames = set()
+        emails = set()
 
         for pdf_file in pdf_files:
             pdf_reader = PdfReader(pdf_file)
@@ -97,10 +114,16 @@ def main():
             usernames = extract_github_username(text)
             github_usernames.update(usernames)
 
+            extracted_emails = extract_emails(text)
+            emails.update(extracted_emails)
+
             combined_text += text + "\n\n"
 
         if github_usernames:
             st.write(f"Found GitHub profiles: {list(github_usernames)}")
+
+        if emails:
+            st.write(f"Found email addresses: {list(emails)}")
 
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
@@ -112,18 +135,17 @@ def main():
         embeddings = OpenAIEmbeddings()
         VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
 
-        # Save the FAISS index
         with open("combined_index.pkl", "wb") as f:
             pickle.dump(VectorStore.index, f)
         with open("combined_texts.pkl", "wb") as f:
             pickle.dump(chunks, f)
 
         options = ["Education", "Skills", "Projects", "Experiences"]
+        st.text("QUICK ACCESS")
         selected_options = st.multiselect("Select the features you want to compare:", options)
 
         custom_prompt = st.text_area("Enter your custom prompt (optional):")
 
-        # Bağlamı saklamak için bir veri yapısı (list) oluştur
         context = []
 
         if st.button("Process"):
@@ -142,14 +164,12 @@ def main():
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
 
-                # Bağlamı ekle
                 final_prompt = (custom_prompt if custom_prompt else default_system_prompt) + "\n\n" + "\n\n".join(context)
 
                 with get_openai_callback() as cb:
                     response = chain.run(input_documents=docs, question=query, system_prompt=final_prompt)
-                    st.write(response)
+                    st.write('<div class="bot_template">', unsafe_allow_html=True)
 
-                # Bağlama yeni soruyu ve cevabı ekle
                 context.append(f"Question: {query}\nAnswer: {response}")
 
                 if "github" in query.lower():
@@ -157,6 +177,38 @@ def main():
                         repos = github_agent.get_user_repos(username)
                         st.write(f"GitHub Repositories for {username}: {repos}")
 
+        st.subheader("Send Email")
+        if emails:
+            receiver_email = st.selectbox("Select email to send:", list(emails))
+            subject = st.text_input("Subject")
+            email_prompt = st.text_area("What would you like to include in the email? Describe the content.")
+
+            if st.button("Send Email"):
+                if receiver_email and subject and email_prompt:
+                    email_query = f"Write an email with the following content: {email_prompt}"
+                    docs = VectorStore.similarity_search(query=email_query, k=5)
+
+                    llm = OpenAI()
+                    chain = load_qa_chain(llm=llm, chain_type="stuff")
+
+                    with get_openai_callback() as cb:
+                        email_message = chain.run(input_documents=docs, question=email_query, system_prompt=default_system_prompt)
+                    
+                    mail_send(receiver_email, subject, email_message)
+                else:
+                    st.error("Please fill in all fields to send an email.")
+
+def main():
+    if 'page' not in st.session_state:
+        st.session_state.page = 'home'
+
+    if st.session_state.page == 'home':
+        st.title("WELCOME TO HEAD HUNTER CV CHATBOT")
+        if st.button("ENTER"):
+            st.session_state.page = 'chatbot'
+            st.experimental_rerun()
+    elif st.session_state.page == 'chatbot':
+        main_interface()
 
 if __name__ == '__main__':
     main()
