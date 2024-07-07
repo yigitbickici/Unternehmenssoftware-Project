@@ -46,6 +46,7 @@ class GitHubAgent:
         return all_files
 
 # Load environment variables
+
 load_dotenv()
 
 def extract_github_username(text):
@@ -159,7 +160,7 @@ def main_interface():
                 if custom_prompt:
                     query += " " + custom_prompt
 
-                docs = VectorStore.similarity_search(query=query, k=5)
+                docs = VectorStore.similarity_search(query=query, k=10)
 
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
