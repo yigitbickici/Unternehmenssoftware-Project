@@ -3,4 +3,9 @@ to run the code please write the following line to the terminal:
 streamlit run Final_Project/app.py
 
 
+
+for github operations, if cv has github address, the public repos can be listed by chatbot
+(example prompt: can you list the github repos of emircan)
+
+
 github : https://github.com/yigitbickici/Unternehmenssoftware-Project
