@@ -160,7 +160,7 @@ def send_email_to_candidates(default_system_prompt):
         if st.button("Send Email"):
             if receiver_email and subject and email_prompt:
                 email_query = f"Write an email with the following content: {email_prompt}"
-                docs = VectorStore.similarity_search(query=email_query, k=5)
+                docs = VectorStore.similarity_search(query=email_query, k=10)
 
                 llm = OpenAI()
                 chain = load_qa_chain(llm=llm, chain_type="stuff")
@@ -183,7 +183,7 @@ def main():
     github_token = os.getenv('GITHUB_TOKEN')
     github_agent = GitHubAgent(github_token)
 
-    st.title("WELCOME TO HEAD HUNTER CV CHATBOT")
+    st.title("WELCOME TO HIREHELPER")
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     pdf_files = st.file_uploader("Upload your PDF(s)", type='pdf', accept_multiple_files=True)
     pdf_extractor(pdf_files)
@@ -202,7 +202,7 @@ def main():
         if st.session_state.page == 'compare_analyze':
             comparing_and_analyzing_cvs(default_system_prompt, github_agent)
         elif st.session_state.page == 'send_email':
-            send_email_to_candidates()
+            send_email_to_candidates(default_system_prompt)
 
 if __name__ == '__main__':
     main()
