@@ -1,0 +1,3 @@
+to run the code please write the following line to the terminal:
+
+streamlit run Final_Project/app.py
