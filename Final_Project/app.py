@@ -6,7 +6,7 @@ import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from github import Github
+from agents import GitHubAgent
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
@@ -15,32 +15,7 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
 
-class GitHubAgent:
-    def __init__(self, token):
-        self.g = Github(token)
 
-    def get_user_repos(self, username):
-        try:
-            user = self.g.get_user(username)
-            repos = user.get_repos()
-            return [repo.name for repo in repos]
-        except Exception as e:
-            return str(e)
-
-    def _extract_repo_name(self, repo_url):
-        match = re.match(r'https://github.com/([^/]+/[^/]+)', repo_url)
-        if match:
-            return match.group(1)
-        else:
-            raise ValueError("Invalid GitHub repository URL")
-
-    def _get_all_contents(self, repo, contents, all_files=[]):
-        for content_file in contents:
-            if content_file.type == "dir":
-                all_files = self._get_all_contents(repo, repo.get_contents(content_file.path), all_files)
-            else:
-                all_files.append(content_file.path)
-        return all_files
 
 # Load environment variables
 load_dotenv()
@@ -145,7 +120,7 @@ def comparing_and_analyzing_cvs(default_system_prompt, github_agent):
         else:
             query = ""
             if selected_options:
-                query += "Compare the CVs based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(selected_options) + "."
+                query += " Compare each CV based on the following features and use the candidates names in the CVs while generating the response: " + ", ".join(selected_options) + "."
             if custom_prompt:
                 query += " " + custom_prompt
 
@@ -167,7 +142,7 @@ def comparing_and_analyzing_cvs(default_system_prompt, github_agent):
                     repos = github_agent.get_user_repos(username)
                     st.write(f"GitHub Repositories for {username}: {repos}")
 
-def send_email_to_candidates():
+def send_email_to_candidates(default_system_prompt):
     st.header("Send E-mail to Candidates")
 
     if 'VectorStore' not in st.session_state or 'emails' not in st.session_state:
