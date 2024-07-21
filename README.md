@@ -47,7 +47,7 @@
     Launch the Streamlit app by running:
 
     ```bash
-    streamlit run app.py
+    streamlit run Final_Project/app.py
     ```
 
 ## Usage
@@ -77,8 +77,4 @@ If you would like to contribute to the development of HireHelper Chatbot, please
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For any questions or feedback, please reach out to [your-email@example.com](mailto:your-email@example.com).
 
