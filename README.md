@@ -23,7 +23,7 @@
 
     ```bash
     git clone https://github.com/yigitbickici/Unternehmenssoftware-Project.git
-    cd hirehelper-chatbot
+    cd Unternehmenssoftware-Project
     ```
 
 2. **Install Dependencies:**
