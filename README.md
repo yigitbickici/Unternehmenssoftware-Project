@@ -22,7 +22,7 @@
 1. **Clone the Repository:**
 
     ```bash
-    git clone https://github.com/yourusername/hirehelper-chatbot.git
+    git clone https://github.com/yigitbickici/Unternehmenssoftware-Project.git
     cd hirehelper-chatbot
     ```
 
